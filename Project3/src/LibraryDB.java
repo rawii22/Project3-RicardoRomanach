@@ -1,3 +1,9 @@
+//Author: Ricardo Romanach
+//Date: November 11, 2022
+//Purpose:  This class will handle all the communication with the
+//          library database and implement the functions required
+//          in the instructions.
+
 import java.sql.*;
 import java.util.Scanner;
 

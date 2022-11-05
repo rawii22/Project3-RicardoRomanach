@@ -1,4 +1,10 @@
-import java.sql.*;
+//Author: Ricardo Romanach
+//Date: November 11, 2022
+//Purpose:  This class handles the flow of the whole program and
+//          offers some features to users to interact with the
+//          library database via Command Line Interface.
+
+import java.sql.SQLException;
 import java.util.Scanner;
 
 public class Main {
