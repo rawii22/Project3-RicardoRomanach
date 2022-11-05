@@ -1,25 +1,26 @@
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import java.sql.*;
+import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
         try
         {
-            Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/library","root","db123");
-            Statement stmt = conn.createStatement();
-            ResultSet res = stmt.executeQuery("select * from author");
-            res.next();
-            System.out.println(res.getString("first_name"));
+            LibraryDB library = new LibraryDB();
+            library.doSomething();
 
-            stmt.close();
-            conn.close();
+            //TODO: Create CLI
+
+            library.closeConnection();
+        }
+        catch (SQLException e)
+        {
+            System.out.println("SQLException");
+            System.out.println(e);
         }
         catch (Exception e)
         {
+            System.out.println("Exception");
             System.out.println(e);
         }
-        System.out.println("yo this works!");
     }
 }

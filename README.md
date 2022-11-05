@@ -3,11 +3,11 @@ This program uses Java to interact with a MySQL database. This is for CSC-3300 F
 
 ## Introduction
 
-This program is our third major project for CSC-3300 at Tennessee Technological University during Fall 2022 with Professor Beata Kubiak. It is meant to teach us how to cummunicate with a MySQL database with Java.
+This program is our third major project for CSC-3300 at Tennessee Technological University during Fall 2022 with Professor Beata Kubiak. It is meant to teach us how to communicate with a MySQL database with Java.
 
 ## Tools
 
-1. **Intellij** - For Java development and some database navigation
+1. **IntelliJ** - For Java development and some database navigation
 2. **MySQL Server\*** - Server used for program to communicate with - try this: https://dev.mysql.com/downloads/mysql/
 3. **MySQL Workbench** - For database navigation and testing SQL snippets
 4. **GitKraken** - For git repository management and visualization
@@ -20,10 +20,14 @@ This program is our third major project for CSC-3300 at Tennessee Technological 
 I want to make sure that this repository comes with everything it needs. I want it to be easy to clone and run this program, so I have included the following files:
 
 1. **3300-F2022-project3-readme.pdf** - Instructions for this project.
-2. **GuideForConnectingMySQLDatabaseToIntelliJ(Update-V2).pdf** - This is a guide that I personally wrote. It was intended to help my class set up a MySQL connection in IntelliJ and show them how to start talking to the database in Java. (I did this since I REALLY did not want to use Eclipse.) This file also includes a link to install IntelliJ and to the mysql connector jar file web page.
+2. **GuideForConnectingMySQLDatabaseToIntelliJ(Update-V2).pdf** - This is a guide that I personally wrote. It was intended to help my class set up a MySQL connection in IntelliJ and show them how to start talking to the database in Java. (I did this since I REALLY did not want to use Eclipse.) This file also includes a link to install IntelliJ and to the MySQL connector jar file web page.
 3. **mysql-connector-java-8.0.30.jar** - This allows Java to communicate with the MySQL database. This is also included so other users don't have to install the library manually.
 4. **library_schema_MySQL.sql** - Provided by Professor. This file establishes the table structure of the "library" database.
 5. **libraryInsertFile_MySQL.sql** - Provided by Professor. This file adds some testing data into the "library" database.
+
+## Compilation
+
+TODO: Explain how to compile into jar or exe file!
 
 ## Limitations
 
