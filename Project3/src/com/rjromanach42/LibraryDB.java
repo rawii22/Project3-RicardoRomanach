@@ -1,5 +1,5 @@
 //Author: Ricardo Romanach
-//Date: November 11, 2022
+//Date: November 4, 2022
 //Purpose:  This class will handle all the communication with the
 //          library database and implement the functions required
 //          in the instructions.
@@ -32,16 +32,16 @@ public class LibraryDB {
         System.out.print("Password: ");
         String password = input.nextLine();*/
 
-        //try/catch here to control what it returns
+        //try-catch here to control what it returns
         try {
             //test = DriverManager.getConnection("jdbc:mysql://localhost:3306/library",username,password);
             //TODO: Use the line on top instead for release version
             test = DriverManager.getConnection("jdbc:mysql://localhost:3306/library","root","db123");
+            System.out.println("\nSuccess!");
+            return test;
         } catch (SQLException e) {
             return null;
         }
-        System.out.println("\nSuccess!");
-        return test;
     }
 
     public ResultSet getAllBookData() throws SQLException {
@@ -50,27 +50,12 @@ public class LibraryDB {
         return res;
     }
 
+    //Prints all the data about every book in the library database
     public void printAllBookData() throws SQLException {
         ResultSet books = getAllBookData();
 
-        /*System.out.printf("%-19s", "ISBN");
-        System.out.printf("%-82s", "Title");
-        System.out.printf("%-36s", "Genre");
-        System.out.printf("%-20s", "Date published");
-        System.out.printf("%-40s", "Publisher");
-        System.out.printf("%-9s", "Edition");
-        System.out.println("Description");*/
-
         while(books.next())
         {
-            /*System.out.printf("%-19s", books.getString("ISBN"));
-            System.out.printf("%-82s", books.getString("title"));
-            System.out.printf("%-36s", books.getString("name") == null ? "N/A" : books.getString("name"));
-            System.out.printf("%-20s", books.getString("date_published"));
-            System.out.printf("%-40s", books.getString("publisher"));
-            System.out.printf("%-9s", books.getString("edition") + " ");
-            System.out.println(books.getString("description") == null ? "N/A" : books.getString("description"));*/
-
             System.out.println("-----------------------------------------------------------------------------------");
             System.out.println("Title:\t" + books.getString("title"));
             System.out.println("-----------------------------------------------------------------------------------");
@@ -81,6 +66,33 @@ public class LibraryDB {
             System.out.println("\tEdition:\t\t" + books.getString("edition") + " ");
             System.out.println("\tDescription:\t" + (books.getString("description") == null ? "N/A" : books.getString("description")));
             System.out.println();
+        }
+    }
+
+    //This function takes in a title and will print out the authors of books that have a similar name, this way you don't have to perfectly type out the name of the book for a result
+    public void printAuthorsByBook(String title) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("select title, first_name, middle_name, last_name from author natural join book natural join book_author where book.title like ? order by title");
+        stmt.setString(1, "%" + title + "%");
+        ResultSet authors = stmt.executeQuery();
+        String prevTitle = "";
+        String currTitle = "";
+        while(authors.next())
+        {
+            String first = authors.getString("first_name");
+            String middle = authors.getString("middle_name");
+            String last = authors.getString("last_name");
+            currTitle = authors.getString("title");
+            if (!currTitle.equals(prevTitle)) //This prevents the title of a book from being printed many times if it has more than one author
+            {
+                System.out.println("\n-----------------------------------------------------------------------------------");
+                System.out.println("Title:\t" + currTitle);
+                System.out.println("-----------------------------------------------------------------------------------");
+            }
+            System.out.println("Author: " +
+                    first  + " " +
+                    (middle == null ? "" : middle + " ") +
+                    last);
+            prevTitle = currTitle;
         }
     }
 

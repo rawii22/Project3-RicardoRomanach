@@ -36,7 +36,9 @@ order by title;
 select ISBN, title, genre_id, date_published, publisher, edition, description from book
 order by title;
 
-select * from genre;]]></console>
+select * from book
+
+select title, first_name, middle_name, last_name from author natural join book natural join book_author]]></console>
     </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">
