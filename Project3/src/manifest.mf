@@ -1,0 +1,2 @@
+Main-Class: com.rjromanach42.Main
+Class-Path: lib\mysql-connector-java-8.0.30.jar

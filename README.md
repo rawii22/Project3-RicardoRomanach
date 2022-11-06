@@ -27,7 +27,13 @@ I want to make sure that this repository comes with everything it needs. I want 
 
 ## Compilation
 
-TODO: Explain how to compile into jar or exe file!
+1. Navigate to the src folder in ~\Project3-RicardoRomanach\Project3\src
+2. To build the program, either run the build.bat file **OR** execute the following commands in the src directory
+    1. **javac -d bin com\rjromanach42\Main.java com\rjromanach42\LibraryDB.java**
+    2. **jar cvfm Project3.jar manifest.mf -C bin .**
+3. To run the program, either run the run.bat file **OR** execute the following command in the same src directory
+    1. **java -jar Project3.jar**
+
 
 ## Limitations
 
