@@ -1,6 +1,10 @@
 # Project3-RicardoRomanach
 This program uses Java to interact with a MySQL database. This is for CSC-3300 Fall 2022 with Beata Kubiak.
 
+GitHub: https://github.com/rawii22/Project3-RicardoRomanach
+
+Author: Ricardo Romanach
+
 ## Introduction
 
 This program is our third major project for CSC-3300 at Tennessee Technological University during Fall 2022 with Professor Beata Kubiak. It is meant to teach us how to communicate with a MySQL database with Java.
@@ -25,10 +29,10 @@ I want to make sure that this repository comes with everything it needs. I want 
 4. **library_schema_MySQL.sql** - Provided by Professor. This file establishes the table structure of the "library" database.
 5. **libraryInsertFile_MySQL.sql** - Provided by Professor. This file adds some testing data into the "library" database.
 
-## Compilation
+## Compiling and Running
 
 1. Navigate to the src folder in ~\Project3-RicardoRomanach\Project3\src
-    > If no "bin" folder exists in the src folder, then create a folder called "bin" inside the src folder before continuing. This can also be done by running the makeBinFolder.bat file.  
+    > If no "bin" folder exists in the src folder, then either run the makeBinFolder.bat file **OR** create a folder called "bin" inside the src folder before continuing.
 2. To build the program, either run the build.bat file **OR** execute the following commands in the src directory
     1. **javac -d bin com\rjromanach42\Main.java com\rjromanach42\LibraryDB.java**
     2. **jar cvfm Project3.jar manifest.mf -C bin .**

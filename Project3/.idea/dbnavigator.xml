@@ -36,15 +36,21 @@ order by title;
 select ISBN, title, genre_id, date_published, publisher, edition, description from book
 order by title;
 
-select * from book
+select * from borrow
 
 select book.ISBN, book.title, copy.barcode from book join copy on book.ISBN = copy.ISBN order by title;
 
-select card_no, first_name, middle_name, last_name from member order by last_name;
+select member.card_no, first_name, middle_name, last_name from member join borrow on member.card_no = borrow.card_no group by card_no order by last_name;
 
-select book.ISBN, book.title, copy.barcode, borrow.date_borrowed, borrow.renewals_no from borrow join copy join book on borrow.barcode = copy.barcode and copy.ISBN = book.ISBN where date_returned is null order by title;
+select borrow.card_no, book.ISBN, book.title, copy.barcode, borrow.date_borrowed, borrow.renewals_no from borrow join copy join book on borrow.barcode = copy.barcode and copy.ISBN = book.ISBN where date_returned is null order by title;
 
-select * from borrow order by barcode;]]></console>
+select borrow.card_no, book.ISBN, book.title, copy.barcode, borrow.date_borrowed, borrow.renewals_no from borrow join copy join book on borrow.barcode = copy.barcode and copy.ISBN = book.ISBN where date_returned is null and card_no = 332 order by title
+
+update library.borrow set date_returned = null where (date(date_returned) = current_date() and card_no = 330 and barcode = 1111);
+
+select book.ISBN, book.title, copy.barcode, borrow.date_borrowed, borrow.renewals_no from borrow join copy join book on borrow.barcode = copy.barcode and copy.ISBN = book.ISBN where date_returned is null and card_no = 330 order by title;
+
+select * from author;]]></console>
     </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">

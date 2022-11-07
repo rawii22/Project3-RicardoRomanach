@@ -15,7 +15,7 @@ public class Main {
         LibraryDB library = new LibraryDB();
         Scanner input = new Scanner(System.in);
         int menuChoice = 0;
-        final int quit = 6;
+        final int quit = 7;
 
         while(menuChoice != quit)
         {
@@ -27,6 +27,7 @@ public class Main {
                 System.out.println("3. Display list of all book copies");
                 System.out.println("4. Display list of all library members");
                 System.out.println("5. Display list of currently borrowed books");
+                System.out.println("6. Return a book");
                 System.out.println(quit + ". Quit\n");
                 System.out.print("> ");
 
@@ -63,6 +64,9 @@ public class Main {
                     case 5:
                         library.printCopiesCurrentlyBorrowed();
                         break;
+                    case 6:
+                        library.returnBook();
+                        break;
                     case quit:
                         System.out.println("\nThank you for using the library database system. Goodbye!");
                         break;
@@ -73,7 +77,7 @@ public class Main {
             }
             catch (SQLException e)
             {
-                System.out.println("SQLException");
+                System.out.println("SQL Exception");
                 System.out.println(e);
             }
             catch (Exception e)

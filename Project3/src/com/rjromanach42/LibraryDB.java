@@ -6,8 +6,11 @@
 
 package com.rjromanach42;
 
-import javax.xml.transform.Result;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Scanner;
 
 public class LibraryDB {
     Connection conn;
@@ -43,6 +46,7 @@ public class LibraryDB {
         }
     }
 
+
     //----Private functions where SQL is remotely executed.
 
     //This gets all the books and sorts them by title, and also replaces the genre ID with the actual genre name.
@@ -74,8 +78,30 @@ public class LibraryDB {
     //This returns a list of every book that is currently borrowed.
     private ResultSet getCopiesCurrentlyBorrowed() throws SQLException {
         Statement stmt = conn.createStatement();
-        return stmt.executeQuery("select book.ISBN, book.title, copy.barcode, borrow.date_borrowed, borrow.renewals_no from borrow join copy join book on borrow.barcode = copy.barcode and copy.ISBN = book.ISBN where date_returned is null order by title;");
+        return stmt.executeQuery("select book.ISBN, book.title, copy.barcode, borrow.date_borrowed, borrow.renewals_no from borrow join copy join book on borrow.barcode = copy.barcode and copy.ISBN = book.ISBN where date_returned is null order by title");
     }
+
+    //This returns a list of users who currently have a book checked out.
+    private ResultSet getMembersBorrowingBook() throws SQLException {
+        Statement stmt = conn.createStatement();
+        return stmt.executeQuery("select member.card_no, first_name, middle_name, last_name from member join borrow on member.card_no = borrow.card_no group by card_no order by last_name");
+    }
+
+    //Similar to getCopiesCurrentlyBorrowed, except the member ID (card_no) can be specified.
+    private ResultSet getCopiesBorrowedByMember(String card_no) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("select book.ISBN, book.title, copy.barcode, borrow.date_borrowed, borrow.renewals_no from borrow join copy join book on borrow.barcode = copy.barcode and copy.ISBN = book.ISBN where date_returned is null and card_no = ? order by title");
+        stmt.setString(1, card_no);
+        return stmt.executeQuery();
+    }
+
+    //This should update a specific book copy's date_returned value to be the current date and time, indicating that it has just been returned
+    private void returnBookByMember(String card_no, String barcode) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("update library.borrow set date_returned = current_timestamp() where (date_returned is null and card_no = ? and barcode = ?);");
+        stmt.setString(1, card_no);
+        stmt.setString(2, barcode);
+        stmt.executeUpdate();
+    }
+
 
     //----Public functions for printing or updating
 
@@ -98,9 +124,21 @@ public class LibraryDB {
         }
     }
 
-    //Lists out every book in the database followed by a list of every copy the library owns (by barcode ID). This avoids printing duplicate book titles.
+    //Lists out every book in the database followed by a list of every copy the library owns (by barcode ID).
     public void printAllBookCopies() throws SQLException {
-        ResultSet copies = getAllBookCopies();
+        printCopies(getAllBookCopies());
+    }
+
+    /**
+     * Generic function that prints copies of books, specifically the title,
+     * followed by the ISBN and copy IDs (The title of a book is not repeated if there is more than one copy,
+     * however the ResultSet must be ordered by the book title for this to work.
+     * @param copies - This ResultSet REQUIRES columns of name "title", "ISBN", and "barcode"
+     * @return List containing barcodes of specified book copies
+     * @throws SQLException
+     */
+    public List printCopies(ResultSet copies) throws SQLException {
+        List copyList = new ArrayList();
         String prevTitle = "";
         String currTitle;
 
@@ -112,20 +150,23 @@ public class LibraryDB {
                 System.out.println("Title:\t" + currTitle);
                 System.out.println("-----------------------------------------------------------------------------------");
                 System.out.println("\tISBN:\t\t" + copies.getString("ISBN"));
-                System.out.print("\tCopy IDs:\t");
+                System.out.print("\tCopy ID(s):\t");
             }
             else
             {
                 System.out.print(", ");
             }
             System.out.print(copies.getString("barcode"));
+            copyList.add(copies.getString("barcode"));
 
             prevTitle = currTitle;
         }
         System.out.println();
+        return copyList;
     }
 
-    //This function takes in a title and will print out the authors of books that have a similar name, this way you don't have to perfectly type out the name of the book for a result
+    //This function takes in a title and will print out the authors of books that have a similar name,
+    //this way you don't have to perfectly type out the name of the book for a result
     public void printAuthorsByBook(String title) throws SQLException {
         ResultSet authors = getAuthorsByBook(title);
         String prevTitle = "";
@@ -171,7 +212,7 @@ public class LibraryDB {
         }
     }
 
-    //This prints all the books that are currently borrowed
+    //This prints all book copies that are currently borrowed
     public void printCopiesCurrentlyBorrowed() throws SQLException {
         ResultSet copies = getCopiesCurrentlyBorrowed();
 
@@ -186,6 +227,79 @@ public class LibraryDB {
             System.out.println("\tNumber of renewals:\t\t" + copies.getString("renewals_no"));
             System.out.println();
         }
+    }
+
+    //This function allows a user to return a book. It first prints a list of users who have books checked out
+    //and asks the user to select a member. Then, it prints a list of books currently borrowed by that member
+    //and asks the user to select a book to return.
+    public void returnBook() throws SQLException {
+        ResultSet borrowers = getMembersBorrowingBook();
+        Scanner input = new Scanner(System.in);
+        List cardIDs = new ArrayList();
+        List borrowedCopies = new ArrayList();
+        String member = "";
+        String copy = "";
+        Integer count = 1;
+        Integer choice = -1;
+        boolean validate = true;
+
+        //print list of users currently borrowing books
+        System.out.println("Please select a member for whom to return a book:");
+        while(borrowers.next())
+        {
+            System.out.println(count + ". " + borrowers.getString("last_name") + ", " +
+                    borrowers.getString("first_name") + " " +
+                    (borrowers.getString("middle_name") == null ? "" : borrowers.getString("middle_name")));
+            cardIDs.add(borrowers.getString("card_no"));
+            count++;
+        }
+        if (cardIDs.size() <= 0)
+        {
+            System.out.println("No books are checked out!");
+            return;
+        }
+
+        //choose a user and validate input
+        System.out.println("\nPlease enter a number:");
+        while(validate) {
+            try {
+                System.out.print("> ");
+                choice = Integer.parseInt(input.nextLine());
+                if (choice < 1 || choice > count) {
+                    System.out.println("Please enter a number from the options listed above.");
+                    continue;
+                }
+                validate = false;
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter a number from the options listed above.");
+            }
+        }
+
+        //print list of copies borrowed by chosen user (via card_no)
+        System.out.println("This member has borrowed these books:");
+        member = cardIDs.get(choice-1).toString(); //associate the user's choice with the corresponding member card_no
+        borrowedCopies = printCopies(getCopiesBorrowedByMember(member));
+
+        //choose a book barcode to return and validate input
+        System.out.println("\nPlease enter the Copy ID of the book you would like to return (or type \"exit\" to go back):");
+        validate = true;
+        while(validate)
+        {
+            System.out.print("> ");
+            copy = input.nextLine();
+            if(copy.toLowerCase(Locale.ROOT).equals("exit"))
+            {
+                return;
+            }
+            if(borrowedCopies.indexOf(copy) == -1)
+            {
+                System.out.println("Please choose a copy that the selected member has borrowed:");
+                continue;
+            }
+            validate = false;
+        }
+        returnBookByMember(member, copy);
+        System.out.println("Success!");
     }
 
     //This function should be called whenever this class is done being used
