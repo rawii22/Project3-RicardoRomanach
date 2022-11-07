@@ -11,20 +11,21 @@ import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-        try
-        {
-            System.out.println("Welcome to the library database system!\n");
-            LibraryDB library = new LibraryDB();
-            Scanner input = new Scanner(System.in);
-            int menuChoice = 0;
-            final int quit = 3;
+        System.out.println("Welcome to the library database system!\n");
+        LibraryDB library = new LibraryDB();
+        Scanner input = new Scanner(System.in);
+        int menuChoice = 0;
+        final int quit = 4;
 
-            while(menuChoice != quit)
+        while(menuChoice != quit)
+        {
+            try
             {
                 System.out.println("\nPlease select an option:");
                 System.out.println("1. Display list of all books");
                 System.out.println("2. Get author(s) of book");
-                System.out.println("3. Quit\n");
+                System.out.println("3. Display list of all book copies");
+                System.out.println(quit + ". Quit\n");
                 System.out.print("> ");
 
                 try
@@ -51,6 +52,9 @@ public class Main {
                         System.out.print("Please enter name of book: ");
                         library.printAuthorsByBook(input.nextLine());
                         break;
+                    case 3:
+                        library.printAllBookCopies();
+                        break;
                     case quit:
                         System.out.println("\nThank you for using the library database system. Goodbye!");
                         break;
@@ -59,17 +63,25 @@ public class Main {
                         break;
                 }
             }
+            catch (SQLException e)
+            {
+                System.out.println("SQLException");
+                System.out.println(e);
+            }
+            catch (Exception e)
+            {
+                System.out.println("Exception");
+                System.out.println(e);
+            }
+        }
 
+        try
+        {
             library.closeConnection();
         }
         catch (SQLException e)
         {
             System.out.println("SQLException");
-            System.out.println(e);
-        }
-        catch (Exception e)
-        {
-            System.out.println("Exception");
             System.out.println(e);
         }
     }
