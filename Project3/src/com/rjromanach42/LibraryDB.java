@@ -15,6 +15,7 @@ import java.util.Scanner;
 public class LibraryDB {
     Connection conn;
 
+    //Start by asking the user to login.
     public LibraryDB()
     {
         System.out.println("Please login to the library database.");
@@ -62,10 +63,11 @@ public class LibraryDB {
     }
 
     //This function will fetch the authors associated with a specified book.
-    //It does not require the title to match perfectly, so it will match the books with the closest matches (in alphabetical order).
-    private ResultSet getAuthorsByBook(String title) throws SQLException {
-        PreparedStatement stmt = conn.prepareStatement("select title, first_name, middle_name, last_name from book left join book_author natural join author on book.ISBN = book_author.ISBN where book.title like ? order by title");
-        stmt.setString(1, "%" + title + "%");
+    //It does not require the title or ISBN to match perfectly, so it will match the books with the closest matches (in alphabetical order).
+    private ResultSet getAuthorsByBook(String titleOrISBN) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("select title, first_name, middle_name, last_name from book left join book_author natural join author on book.ISBN = book_author.ISBN where book.title like ? or book.ISBN like ? order by title");
+        stmt.setString(1, "%" + titleOrISBN + "%");
+        stmt.setString(2, "%" + titleOrISBN + "%");
         return stmt.executeQuery();
     }
 
@@ -94,9 +96,27 @@ public class LibraryDB {
         return stmt.executeQuery();
     }
 
-    //This should update a specific book copy's date_returned value to be the current date and time, indicating that it has just been returned
+    //This should update a specific book copy's date_returned value to be the current date and time, indicating that it has just been returned.
     private void returnBookByMember(String card_no, String barcode) throws SQLException {
         PreparedStatement stmt = conn.prepareStatement("update library.borrow set date_returned = current_timestamp() where (date_returned is null and card_no = ? and barcode = ?)");
+        stmt.setString(1, card_no);
+        stmt.setString(2, barcode);
+        stmt.executeUpdate();
+    }
+
+    //This should check out a book given a member's card_no and a specific barcode. It will print and error if the book copy is already checked out.
+    private void checkoutBookByMember(String card_no, String barcode) throws SQLException {
+        PreparedStatement check = conn.prepareStatement("select * from borrow where barcode = ? and date_returned is null");
+        check.setString(1, barcode);
+        ResultSet bookBorrowed = check.executeQuery();
+
+        if(bookBorrowed.next())
+        {
+            System.out.println("That book is already checked out!");
+            return;
+        }
+
+        PreparedStatement stmt = conn.prepareStatement("insert into borrow (card_no, barcode, date_borrowed, renewals_no) values ( ? , ? , current_timestamp() , 0)");
         stmt.setString(1, card_no);
         stmt.setString(2, barcode);
         stmt.executeUpdate();
@@ -132,7 +152,7 @@ public class LibraryDB {
     /**
      * Generic function that prints copies of books, specifically the title,
      * followed by the ISBN and copy IDs (The title of a book is not repeated if there is more than one copy,
-     * however the ResultSet must be ordered by the book title for this to work.
+     * however the ResultSet must be ordered by the book title for this to work).
      * @param copies - This ResultSet REQUIRES columns of name "title", "ISBN", and "barcode"
      * @return List containing barcodes of specified book copies
      * @throws SQLException
@@ -165,10 +185,10 @@ public class LibraryDB {
         return copyList;
     }
 
-    //This function takes in a title and will print out the authors of books that have a similar name,
+    //This function takes in a title or ISBN and will print out the authors of books that have a similar name or ISBN,
     //this way you don't have to perfectly type out the name of the book for a result
-    public void printAuthorsByBook(String title) throws SQLException {
-        ResultSet authors = getAuthorsByBook(title);
+    public void printAuthorsByBook(String titleOrISBN) throws SQLException {
+        ResultSet authors = getAuthorsByBook(titleOrISBN);
         String prevTitle = "";
         String currTitle;
 
@@ -237,6 +257,9 @@ public class LibraryDB {
             cardIDs.add(members.getString("card_no"));
             count++;
         }
+        if (cardIDs.size() <= 0) {
+            System.out.println("No members in the library!");
+        }
         return cardIDs;
     }
 
@@ -257,18 +280,14 @@ public class LibraryDB {
         }
     }
 
-    //This function allows a user to return a book. It first prints a list of users who have books checked out
+    //This function allows a user to return a book. It first prints a list of members who have books checked out
     //and asks the user to select a member. Then, it prints a list of books currently borrowed by that member
     //and asks the user to select a book to return.
     public void returnBook() throws SQLException {
-        Scanner input = new Scanner(System.in);
-        List cardIDs = new ArrayList();
-        List borrowedCopies = new ArrayList();
-        String member = "";
-        String copy = "";
-        Integer count;
-        Integer choice = -1;
-        boolean validate = true;
+        List cardIDs;
+        List borrowedCopies;
+        String member;
+        String copy;
 
         //print list of users currently borrowing books
         System.out.println("Please select a member for whom to return a book:");
@@ -278,15 +297,80 @@ public class LibraryDB {
             System.out.println("No books are checked out!");
             return;
         }
-        count = cardIDs.size();
 
-        //choose a user and validate input
+        //choose a user
+        member = chooseMember(cardIDs); //associate the user's choice with the corresponding member card_no
+
+        //print list of copies borrowed by chosen member (via card_no)
+        System.out.println("This member has borrowed these books:");
+        borrowedCopies = printCopies(getCopiesBorrowedByMember(member));
+
+        //choose a book barcode from the list to return
+        System.out.println("\nPlease enter the Copy ID of the book you would like to return (or type \"exit\" to go back):");
+        copy = chooseCopy(borrowedCopies);
+        if (copy == null)
+        {
+            return;
+        }
+
+        //return the book and print message
+        returnBookByMember(member, copy);
+        System.out.println("Success!");
+    }
+
+    //This function allows a user to check out a book. It first prints the list of members and asks the user to
+    //specify which member wants to check out a book. Then, it prints the list of books in the library, and asks
+    //the user to select which copy ID they would like to check out.
+    public void checkoutBook() throws SQLException {
+        List cardIDs;
+        String member;
+        String copy;
+
+        //print list of users
+        System.out.println("Please select the member checking out a book:");
+        cardIDs = printMembers(getAllMembersData());
+        if (cardIDs.size() <= 0)
+        {
+            return;
+        }
+
+        //choose a user
+        member = chooseMember(cardIDs);
+
+        //print list of all copies and ask user to choose copy ID
+        System.out.println("\nPlease enter the Copy ID of the book you would like to check out (or type \"exit\" to go back):");
+        copy = chooseCopy(printCopies(getAllBookCopies()));
+        if (copy == null)
+        {
+            return;
+        }
+
+        //check out the book
+        checkoutBookByMember(member, copy);
+        System.out.println("Success!");
+    }
+
+
+    //----Private helper and validation functions
+
+    /**
+     * This asks the user to enter a number that is within the size of the specified List. Once the user enters a
+     * valid number, it will return the corresponding member card_no.
+     * @param cardIDs - A list of card_no's for the user to select from
+     * @return
+     */
+    private String chooseMember(List cardIDs) {
+        Scanner input = new Scanner(System.in);
+        Integer choice = -1;
+        boolean validate = true;
+
         System.out.println("\nPlease enter a number:");
         while(validate) {
             try {
                 System.out.print("> ");
+                //TODO: create case here in case user wants to exit. store input as string first, check if "exit" and return, otherwise try to parse it
                 choice = Integer.parseInt(input.nextLine());
-                if (choice < 1 || choice > count) {
+                if (choice < 1 || choice > cardIDs.size()) {
                     System.out.println("Please enter a number from the options listed above.");
                     continue;
                 }
@@ -296,31 +380,37 @@ public class LibraryDB {
             }
         }
 
-        //print list of copies borrowed by chosen user (via card_no)
-        System.out.println("This member has borrowed these books:");
-        member = cardIDs.get(choice-1).toString(); //associate the user's choice with the corresponding member card_no
-        borrowedCopies = printCopies(getCopiesBorrowedByMember(member));
+        return cardIDs.get(choice-1).toString();
+    }
 
-        //choose a book barcode to return and validate input
-        System.out.println("\nPlease enter the Copy ID of the book you would like to return (or type \"exit\" to go back):");
-        validate = true;
+    /**
+     * This asks the user to enter a copy ID that is in the specified List. Once the user enters a valid copy ID,
+     * it will return that copy ID. If they choose to exit, it will return null.
+     * @param copies - List of copies for the user to select from
+     * @return
+     */
+    private String chooseCopy(List copies) {
+        Scanner input = new Scanner(System.in);
+        boolean validate = true;
+        String copy = "";
+
         while(validate)
         {
             System.out.print("> ");
             copy = input.nextLine();
             if(copy.toLowerCase(Locale.ROOT).equals("exit"))
             {
-                return;
+                return null;
             }
-            if(borrowedCopies.indexOf(copy) == -1)
+            if(copies.indexOf(copy) == -1)
             {
-                System.out.println("Please choose a copy that the selected member has borrowed:");
+                System.out.println("Please choose a valid copy ID:");
                 continue;
             }
             validate = false;
         }
-        returnBookByMember(member, copy);
-        System.out.println("Success!");
+
+        return copy;
     }
 
     //This function should be called whenever this class is done being used
