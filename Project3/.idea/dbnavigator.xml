@@ -38,7 +38,9 @@ order by title;
 
 select * from book
 
-select title, first_name, middle_name, last_name from author natural join book natural join book_author]]></console>
+select book.ISBN, book.title, copy.barcode from book join copy on book.ISBN = copy.ISBN order by title;
+
+select card_no, first_name, middle_name, last_name from member order by last_name;]]></console>
     </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">

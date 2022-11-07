@@ -43,20 +43,30 @@ public class LibraryDB {
         }
     }
 
-    public ResultSet getAllBookData() throws SQLException {
+    //This gets all the books and sorts them by title, and also replaces the genre ID with the actual genre name.
+    private ResultSet getAllBookData() throws SQLException {
         Statement stmt = conn.createStatement();
-        return stmt.executeQuery("select ISBN, title, genre.name, date_published, publisher, edition, description from book left join genre on book.genre_id = genre.genre_id order by title;");
+        return stmt.executeQuery("select ISBN, title, genre.name, date_published, publisher, edition, description from book left join genre on book.genre_id = genre.genre_id order by title");
     }
 
-    public ResultSet getAllBookCopies() throws SQLException {
+    //This gets every individual copy of each book the library holds matched with the name and barcode.
+    private ResultSet getAllBookCopies() throws SQLException {
         Statement stmt = conn.createStatement();
         return stmt.executeQuery("select book.ISBN, book.title, copy.barcode from book join copy on book.ISBN = copy.ISBN order by title");
     }
 
-    public ResultSet getAuthorsByBook(String title) throws SQLException {
+    //This function will fetch the authors associated with a specified book.
+    //It does not require the title to match perfectly, so it will match the books with the closest matches (in alphabetical order).
+    private ResultSet getAuthorsByBook(String title) throws SQLException {
         PreparedStatement stmt = conn.prepareStatement("select title, first_name, middle_name, last_name from author natural join book natural join book_author where book.title like ? order by title");
         stmt.setString(1, "%" + title + "%");
         return stmt.executeQuery();
+    }
+
+    //This gets all the members in the library ordered by last name.
+    private ResultSet getAllMembersData() throws SQLException {
+        Statement stmt = conn.createStatement();
+        return stmt.executeQuery("select card_no, first_name, middle_name, last_name from member order by last_name");
     }
 
     //Prints all the data about every book in the library database
@@ -78,6 +88,7 @@ public class LibraryDB {
         }
     }
 
+    //Lists out every book in the database followed by a list of every copy the library owns (by barcode ID). This avoids printing duplicate book titles.
     public void printAllBookCopies() throws SQLException {
         ResultSet copies = getAllBookCopies();
         String prevTitle = "";
@@ -132,6 +143,26 @@ public class LibraryDB {
         }
     }
 
+    //This function prints out the data about every member in the database
+    public void printAllMembersData() throws SQLException
+    {
+        ResultSet members = getAllMembersData();
+
+        System.out.println("Members by last name:\n");
+        System.out.printf("%-23s", "Last name:");
+        System.out.printf("%-23s", "First name:");
+        System.out.printf("%-23s", "Middle name:");
+        System.out.println("Card ID:");
+        while(members.next())
+        {
+            System.out.printf("%-23s", members.getString("last_name"));
+            System.out.printf("%-23s", members.getString("first_name"));
+            System.out.printf("%-23s", members.getString("middle_name") == null ? "N/A" : members.getString("middle_name"));
+            System.out.println(members.getString("card_no"));
+        }
+    }
+
+    //This function should be called whenever this class is done being used
     public void closeConnection() throws SQLException {
         conn.close();
     }
