@@ -64,7 +64,7 @@ public class LibraryDB {
     //This function will fetch the authors associated with a specified book.
     //It does not require the title to match perfectly, so it will match the books with the closest matches (in alphabetical order).
     private ResultSet getAuthorsByBook(String title) throws SQLException {
-        PreparedStatement stmt = conn.prepareStatement("select title, first_name, middle_name, last_name from author natural join book natural join book_author where book.title like ? order by title");
+        PreparedStatement stmt = conn.prepareStatement("select title, first_name, middle_name, last_name from book left join book_author natural join author on book.ISBN = book_author.ISBN where book.title like ? order by title");
         stmt.setString(1, "%" + title + "%");
         return stmt.executeQuery();
     }
@@ -84,7 +84,7 @@ public class LibraryDB {
     //This returns a list of users who currently have a book checked out.
     private ResultSet getMembersBorrowingBook() throws SQLException {
         Statement stmt = conn.createStatement();
-        return stmt.executeQuery("select member.card_no, first_name, middle_name, last_name from member join borrow on member.card_no = borrow.card_no group by card_no order by last_name");
+        return stmt.executeQuery("select member.card_no, first_name, middle_name, last_name from member join borrow on member.card_no = borrow.card_no where date_returned is null group by card_no order by last_name");
     }
 
     //Similar to getCopiesCurrentlyBorrowed, except the member ID (card_no) can be specified.
@@ -96,7 +96,7 @@ public class LibraryDB {
 
     //This should update a specific book copy's date_returned value to be the current date and time, indicating that it has just been returned
     private void returnBookByMember(String card_no, String barcode) throws SQLException {
-        PreparedStatement stmt = conn.prepareStatement("update library.borrow set date_returned = current_timestamp() where (date_returned is null and card_no = ? and barcode = ?);");
+        PreparedStatement stmt = conn.prepareStatement("update library.borrow set date_returned = current_timestamp() where (date_returned is null and card_no = ? and barcode = ?)");
         stmt.setString(1, card_no);
         stmt.setString(2, barcode);
         stmt.executeUpdate();
@@ -185,10 +185,17 @@ public class LibraryDB {
                 System.out.println("Title:\t" + currTitle);
                 System.out.println("-----------------------------------------------------------------------------------");
             }
-            System.out.println("Author: " +
-                    first  + " " +
-                    (middle == null ? "" : middle + " ") +
-                    last);
+            if(first == null && middle == null && last == null)
+            {
+                System.out.println("No author are specified.");
+            }
+            else
+            {
+                System.out.println("Author: " +
+                        first + " " +
+                        (middle == null ? "" : middle + " ") +
+                        last);
+            }
 
             prevTitle = currTitle;
         }
@@ -212,6 +219,27 @@ public class LibraryDB {
         }
     }
 
+    /**
+     * Generic function that prints out the names of members in the format #. last_name, first_name middle_name
+     * each on their own line. (# starts with 1, so any given member's card_no can be accessed with cardIDs[#-1])
+     * @param members - This ResultSet REQUIRES columns of name "card_no", "first_name", "middle_name", and "last_name"
+     * @return List containing the card_no's of each member in the order they were printed.
+     * @throws SQLException
+     */
+    public List printMembers(ResultSet members) throws SQLException {
+        List cardIDs = new ArrayList();
+        Integer count = 1;
+        while(members.next())
+        {
+            System.out.println(count + ". " + members.getString("last_name") + ", " +
+                    members.getString("first_name") + " " +
+                    (members.getString("middle_name") == null ? "" : members.getString("middle_name")));
+            cardIDs.add(members.getString("card_no"));
+            count++;
+        }
+        return cardIDs;
+    }
+
     //This prints all book copies that are currently borrowed
     public void printCopiesCurrentlyBorrowed() throws SQLException {
         ResultSet copies = getCopiesCurrentlyBorrowed();
@@ -233,31 +261,24 @@ public class LibraryDB {
     //and asks the user to select a member. Then, it prints a list of books currently borrowed by that member
     //and asks the user to select a book to return.
     public void returnBook() throws SQLException {
-        ResultSet borrowers = getMembersBorrowingBook();
         Scanner input = new Scanner(System.in);
         List cardIDs = new ArrayList();
         List borrowedCopies = new ArrayList();
         String member = "";
         String copy = "";
-        Integer count = 1;
+        Integer count;
         Integer choice = -1;
         boolean validate = true;
 
         //print list of users currently borrowing books
         System.out.println("Please select a member for whom to return a book:");
-        while(borrowers.next())
-        {
-            System.out.println(count + ". " + borrowers.getString("last_name") + ", " +
-                    borrowers.getString("first_name") + " " +
-                    (borrowers.getString("middle_name") == null ? "" : borrowers.getString("middle_name")));
-            cardIDs.add(borrowers.getString("card_no"));
-            count++;
-        }
+        cardIDs = printMembers(getMembersBorrowingBook());
         if (cardIDs.size() <= 0)
         {
             System.out.println("No books are checked out!");
             return;
         }
+        count = cardIDs.size();
 
         //choose a user and validate input
         System.out.println("\nPlease enter a number:");
