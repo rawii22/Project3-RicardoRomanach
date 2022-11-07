@@ -40,7 +40,11 @@ select * from book
 
 select book.ISBN, book.title, copy.barcode from book join copy on book.ISBN = copy.ISBN order by title;
 
-select card_no, first_name, middle_name, last_name from member order by last_name;]]></console>
+select card_no, first_name, middle_name, last_name from member order by last_name;
+
+select book.ISBN, book.title, copy.barcode, borrow.date_borrowed, borrow.renewals_no from borrow join copy join book on borrow.barcode = copy.barcode and copy.ISBN = book.ISBN where date_returned is null order by title;
+
+select * from borrow order by barcode;]]></console>
     </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">

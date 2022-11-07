@@ -6,6 +6,7 @@
 
 package com.rjromanach42;
 
+import javax.xml.transform.Result;
 import java.sql.*;
 
 public class LibraryDB {
@@ -21,8 +22,7 @@ public class LibraryDB {
     }
 
     //This method prompts the user for login info and return a connection if successful. Otherwise, it will return null.
-    private Connection login()
-    {
+    private Connection login() {
         Connection test;
         //TODO: Uncomment this for release version
         /*Scanner input = new Scanner(System.in);
@@ -42,6 +42,8 @@ public class LibraryDB {
             return null;
         }
     }
+
+    //----Private functions where SQL is remotely executed.
 
     //This gets all the books and sorts them by title, and also replaces the genre ID with the actual genre name.
     private ResultSet getAllBookData() throws SQLException {
@@ -68,6 +70,14 @@ public class LibraryDB {
         Statement stmt = conn.createStatement();
         return stmt.executeQuery("select card_no, first_name, middle_name, last_name from member order by last_name");
     }
+
+    //This returns a list of every book that is currently borrowed.
+    private ResultSet getCopiesCurrentlyBorrowed() throws SQLException {
+        Statement stmt = conn.createStatement();
+        return stmt.executeQuery("select book.ISBN, book.title, copy.barcode, borrow.date_borrowed, borrow.renewals_no from borrow join copy join book on borrow.barcode = copy.barcode and copy.ISBN = book.ISBN where date_returned is null order by title;");
+    }
+
+    //----Public functions for printing or updating
 
     //Prints all the data about every book in the library database
     public void printAllBookData() throws SQLException {
@@ -144,8 +154,7 @@ public class LibraryDB {
     }
 
     //This function prints out the data about every member in the database
-    public void printAllMembersData() throws SQLException
-    {
+    public void printAllMembersData() throws SQLException {
         ResultSet members = getAllMembersData();
 
         System.out.println("Members by last name:\n");
@@ -159,6 +168,23 @@ public class LibraryDB {
             System.out.printf("%-23s", members.getString("first_name"));
             System.out.printf("%-23s", members.getString("middle_name") == null ? "N/A" : members.getString("middle_name"));
             System.out.println(members.getString("card_no"));
+        }
+    }
+
+    //This prints all the books that are currently borrowed
+    public void printCopiesCurrentlyBorrowed() throws SQLException {
+        ResultSet copies = getCopiesCurrentlyBorrowed();
+
+        while(copies.next())
+        {
+            System.out.println("-----------------------------------------------------------------------------------");
+            System.out.println("Title:\t" + copies.getString("title"));
+            System.out.println("-----------------------------------------------------------------------------------");
+            System.out.println("\tISBN:\t\t\t\t\t" + copies.getString("ISBN"));
+            System.out.println("\tBarcode:\t\t\t\t" + copies.getString("barcode"));
+            System.out.println("\tDate borrowed:\t\t\t" + copies.getString("date_borrowed"));
+            System.out.println("\tNumber of renewals:\t\t" + copies.getString("renewals_no"));
+            System.out.println();
         }
     }
 

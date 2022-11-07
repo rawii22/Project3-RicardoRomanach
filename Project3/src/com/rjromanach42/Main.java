@@ -15,7 +15,7 @@ public class Main {
         LibraryDB library = new LibraryDB();
         Scanner input = new Scanner(System.in);
         int menuChoice = 0;
-        final int quit = 5;
+        final int quit = 6;
 
         while(menuChoice != quit)
         {
@@ -26,6 +26,7 @@ public class Main {
                 System.out.println("2. Get author(s) of book");
                 System.out.println("3. Display list of all book copies");
                 System.out.println("4. Display list of all library members");
+                System.out.println("5. Display list of currently borrowed books");
                 System.out.println(quit + ". Quit\n");
                 System.out.print("> ");
 
@@ -58,6 +59,9 @@ public class Main {
                         break;
                     case 4:
                         library.printAllMembersData();
+                        break;
+                    case 5:
+                        library.printCopiesCurrentlyBorrowed();
                         break;
                     case quit:
                         System.out.println("\nThank you for using the library database system. Goodbye!");
