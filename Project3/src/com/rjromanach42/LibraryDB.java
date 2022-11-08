@@ -144,7 +144,7 @@ public class LibraryDB {
         System.out.println("Successfully renewed!");
     }
 
-    //This gets the amount of money owed by a specified member.
+    //This gets the amount of money owed by a specified member, regardless of whether the late books have been returned or not.
     private ResultSet getMoneyOwedByMember(String card_no) throws SQLException {
         PreparedStatement stmt = conn.prepareStatement(
                 "select card_no, first_name, middle_name, last_name, sum(\n" +
@@ -159,6 +159,23 @@ public class LibraryDB {
         stmt.setString(1, card_no);
         return stmt.executeQuery();
 
+    }
+
+    //This gets a list of each book for whom a specified member owes money, including the fee for each book. It also
+    //returns a variety of other columns.
+    private ResultSet getFeePerBookByMember(String card_no) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement(
+            "select first_name, middle_name, last_name, bk.ISBN, bk.title, c.barcode, date_borrowed, date_returned, renewals_no, (\n" +
+                "   if(b.paid is null and datediff(if(b.date_returned is not null, b.date_returned, now()), b.date_borrowed) - (14 * (b.renewals_no + 1)) > 0,\n" +
+                    "   if(b.date_returned is null,\n" +
+                    "       datediff(now(), b.date_borrowed) - (14 * (b.renewals_no + 1)),\n" +
+                    "       datediff(b.date_returned, b.date_borrowed) - (14 * (b.renewals_no + 1))) * 0.25,\n" +
+                    "   0)) as money_owed, paid\n" +
+                "from member m join borrow b join book bk join copy c\n" +
+                "on m.card_no = b.card_no and b.barcode = c.barcode and bk.ISBN = c.ISBN\n" +
+                "where m.card_no = ?");
+        stmt.setString(1, card_no);
+        return stmt.executeQuery();
     }
 
 
@@ -416,7 +433,6 @@ public class LibraryDB {
         //choose a book barcode from the list to renew
         System.out.println("\nPlease enter the Copy ID of the book you would like to renew (or type \"exit\" to go back):");
         copy = chooseCopy(borrowedCopies);
-
         if (copy == null)
         {
             return;
@@ -431,17 +447,19 @@ public class LibraryDB {
         ResultSet targetMember;
         List cardIDs;
         String member;
-        System.out.println("Please select a member to get their balance owed");
+
+        //print list of users
+        System.out.println("Please select a member to get their balance owed:");
         cardIDs = printMembers(getAllMembersData());
         if (cardIDs.size() <= 0)
         {
-            System.out.println("No books are checked out!");
             return;
         }
 
         //choose a member
         member = chooseMember(cardIDs);
 
+        //print money owed by that member
         targetMember = getMoneyOwedByMember(member);
         targetMember.next();
         System.out.println(
@@ -449,6 +467,44 @@ public class LibraryDB {
                 targetMember.getString("middle_name") + " " +
                 targetMember.getString("last_name") +
                 " owes the library $" + targetMember.getString("money_owed") + ".");
+    }
+
+    //This function asks the user to select a member, and then it will print out a list of books that the selected
+    //member owes money for and the fee for each one.
+    public void printFeePerBookByMember() throws SQLException {
+        ResultSet targetMember;
+        List cardIDs;
+        String member;
+
+        //print list of users
+        System.out.println("Please select a member to get their balance owed");
+        cardIDs = printMembers(getAllMembersData());
+        if (cardIDs.size() <= 0)
+        {
+            return;
+        }
+
+        //choose a member
+        member = chooseMember(cardIDs);
+
+        //print list of books and their respective fees
+        targetMember = getFeePerBookByMember(member);
+        System.out.println("The selected member owes the library for the following books:");
+        while(targetMember.next())
+        {
+            String fee = targetMember.getString("money_owed");
+            if(!fee.equals("0")) {
+                System.out.println("\n\n-----------------------------------------------------------------------------------");
+                System.out.println("Title:\t" + targetMember.getString("title"));
+                System.out.println("-----------------------------------------------------------------------------------");
+                System.out.println("\tISBN:\t\t\t" + targetMember.getString("ISBN"));
+                System.out.println("\tCopy ID:\t\t" + targetMember.getString("barcode"));
+                System.out.println("\tDate Borrowed:\t" + targetMember.getString("date_borrowed"));
+                System.out.println("\tDate Returned:\t" + (targetMember.getString("date_returned") == null ? "Not returned" : targetMember.getString("date_returned")));
+                System.out.println("\tRenewals:\t\t" + targetMember.getString("renewals_no"));
+                System.out.println("\tFee:\t\t\t$" + fee);
+            }
+        }
     }
 
 

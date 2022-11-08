@@ -15,22 +15,23 @@ public class Main {
         LibraryDB library = new LibraryDB();
         Scanner input = new Scanner(System.in);
         int menuChoice = 0;
-        final int quit = 10;
+        final int quit = 11;
 
         while(menuChoice != quit)
         {
             try
             {
                 System.out.println("\nPlease select an option:");
-                System.out.println("1. Display list of all books");
-                System.out.println("2. Get author(s) of book");
-                System.out.println("3. Display list of all book copies");
-                System.out.println("4. Display list of all library members");
-                System.out.println("5. Display list of currently borrowed books");
-                System.out.println("6. Return a book");
-                System.out.println("7. Check out a book");
-                System.out.println("8. Renew a book");
-                System.out.println("9. Get money owed by member");
+                System.out.println("1.  Display list of all books");
+                System.out.println("2.  Get author(s) of book");
+                System.out.println("3.  Display list of all book copies");
+                System.out.println("4.  Display list of all library members");
+                System.out.println("5.  Display list of currently borrowed books");
+                System.out.println("6.  Return a book");
+                System.out.println("7.  Check out a book");
+                System.out.println("8.  Renew a book");
+                System.out.println("9.  Get money owed by member");
+                System.out.println("10. Get money owed by member per book");
                 System.out.println(quit + ". Quit\n");
                 System.out.print("> ");
 
@@ -78,6 +79,9 @@ public class Main {
                         break;
                     case 9:
                         library.printMoneyOwedByMember();
+                        break;
+                    case 10:
+                        library.printFeePerBookByMember();
                         break;
                     case quit:
                         System.out.println("\nThank you for using the library database system. Goodbye!");
