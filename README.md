@@ -32,14 +32,16 @@ I want to make sure that this repository comes with everything it needs. I want 
 ## Compiling and Running
 
 1. Navigate to the src folder in ~\Project3-RicardoRomanach\Project3\src
-    > If no "bin" folder exists in the src folder, then either run the makeBinFolder.bat file **OR** create a folder called "bin" inside the src folder before continuing.
-2. To build the program, either run the build.bat file **OR** execute the following commands in the src directory
-    1. **javac -d bin com\rjromanach42\Main.java com\rjromanach42\LibraryDB.java**
-    2. **jar cvfm Project3.jar manifest.mf -C bin .**
-3. To run the program, either run the run.bat file **OR** execute the following command in the same src directory
-    1. **java -jar Project3.jar**
+    > If no "bin" folder exists in the src folder, then either run the **makeBinFolder.bat** file **OR** create a folder called "bin" inside the src folder before continuing.
+2. To build the program, either run the **build.bat** file **OR** execute the following commands in the src directory
+    1. `javac -d bin com\rjromanach42\Main.java com\rjromanach42\LibraryDB.java`
+    2. `jar cvfm Project3.jar manifest.mf -C bin .`
+3. To run the program, either run the **run.bat** file **OR** execute the following command in the same src directory
+    1. `java -jar Project3.jar`
 
 
 ## Limitations
 
-Unfortunately, since this program had to be graded on a separate machine, and therefore a separate database instance, we were not able to use functions or stored procedures since the grader would have been missing those functions and procedures in their database when they tried to run the program.
+Unfortunately, since this program had to be graded on a separate machine, and therefore a separate database instance, **we were not able to use sql functions or stored procedures since the grader would have been missing those functions and procedures in their database if they tried to run the program.**
+
+Also, with this program a user is not allowed to renew a book more than twice.

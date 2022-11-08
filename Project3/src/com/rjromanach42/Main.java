@@ -15,7 +15,7 @@ public class Main {
         LibraryDB library = new LibraryDB();
         Scanner input = new Scanner(System.in);
         int menuChoice = 0;
-        final int quit = 8;
+        final int quit = 9;
 
         while(menuChoice != quit)
         {
@@ -29,6 +29,7 @@ public class Main {
                 System.out.println("5. Display list of currently borrowed books");
                 System.out.println("6. Return a book");
                 System.out.println("7. Check out a book");
+                System.out.println("8. Renew a book");
                 System.out.println(quit + ". Quit\n");
                 System.out.print("> ");
 
@@ -70,6 +71,9 @@ public class Main {
                         break;
                     case 7:
                         library.checkoutBook();
+                        break;
+                    case 8:
+                        library.renewBook();
                         break;
                     case quit:
                         System.out.println("\nThank you for using the library database system. Goodbye!");

@@ -50,6 +50,8 @@ update library.borrow set date_returned = null where (date(date_returned) = curr
 
 update library.borrow set date_returned = current_timestamp() where (date_returned is null and card_no = 333 and barcode = 1113);
 
+update library.borrow set renewals_no = renewals_no + 1 where (date_returned is null and card_no = 331 and barcode = 1105);
+
 select book.ISBN, book.title, copy.barcode, borrow.date_borrowed, borrow.renewals_no from borrow join copy join book on borrow.barcode = copy.barcode and copy.ISBN = book.ISBN where date_returned is null and card_no = 330 order by title;
 
 select * from borrow where barcode = 1106 and date_returned is null;

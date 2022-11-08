@@ -96,7 +96,7 @@ public class LibraryDB {
         return stmt.executeQuery();
     }
 
-    //This should update a specific book copy's date_returned value to be the current date and time, indicating that it has just been returned.
+    //This updates a specific book copy's date_returned value to be the current date and time, indicating that it has just been returned.
     private void returnBookByMember(String card_no, String barcode) throws SQLException {
         PreparedStatement stmt = conn.prepareStatement("update library.borrow set date_returned = current_timestamp() where (date_returned is null and card_no = ? and barcode = ?)");
         stmt.setString(1, card_no);
@@ -104,7 +104,7 @@ public class LibraryDB {
         stmt.executeUpdate();
     }
 
-    //This should check out a book given a member's card_no and a specific barcode. It will print and error if the book copy is already checked out.
+    //This checks out a book given a member's card_no and a specific barcode. It will print an error if the book copy is already checked out.
     private void checkoutBookByMember(String card_no, String barcode) throws SQLException {
         PreparedStatement check = conn.prepareStatement("select * from borrow where barcode = ? and date_returned is null");
         check.setString(1, barcode);
@@ -120,6 +120,28 @@ public class LibraryDB {
         stmt.setString(1, card_no);
         stmt.setString(2, barcode);
         stmt.executeUpdate();
+        System.out.println("Success!");
+    }
+
+    //This renews a book give a member's card_no and a specific barcode.
+    private void renewBookByMember(String card_no, String barcode) throws SQLException {
+        PreparedStatement check = conn.prepareStatement("select * from borrow where card_no = ? and barcode = ? and date_returned is null");
+        check.setString(1, card_no);
+        check.setString(2, barcode);
+        ResultSet bookBorrowed = check.executeQuery();
+
+        if(bookBorrowed.next() && bookBorrowed.getInt("renewals_no") >= 2)
+        {
+            System.out.println("You cannot renew a book more than two times!");
+            return;
+        }
+
+        PreparedStatement stmt = conn.prepareStatement("update library.borrow set renewals_no = renewals_no + 1 where (date_returned is null and card_no = ? and barcode = ?)");
+        stmt.setString(1, card_no);
+        stmt.setString(2, barcode);
+        stmt.executeUpdate();
+
+        System.out.println("Successfully renewed!");
     }
 
 
@@ -347,7 +369,44 @@ public class LibraryDB {
 
         //check out the book
         checkoutBookByMember(member, copy);
-        System.out.println("Success!");
+    }
+
+    //This function allows a user to renew a book they are currently borrowing. It starts by listing the members
+    //who are currently borrowing a book. After choosing a member, it will print out the book that that member is
+    // currently borrowing. Then it will ask the user to select which copy they would like to renew.
+    public void renewBook() throws SQLException {
+        List cardIDs;
+        List borrowedCopies;
+        String member;
+        String copy;
+
+        //print list of users currently borrowing books
+        System.out.println("Please select a member for whom to renew a book:");
+        cardIDs = printMembers(getMembersBorrowingBook());
+        if (cardIDs.size() <= 0)
+        {
+            System.out.println("No books are checked out!");
+            return;
+        }
+
+        //choose a user
+        member = chooseMember(cardIDs);
+
+        //print list of copies borrowed by chosen member (via card_no)
+        System.out.println("This member has borrowed these books:");
+        borrowedCopies = printCopies(getCopiesBorrowedByMember(member));
+
+        //choose a book barcode from the list to renew
+        System.out.println("\nPlease enter the Copy ID of the book you would like to renew (or type \"exit\" to go back):");
+        copy = chooseCopy(borrowedCopies);
+
+        if (copy == null)
+        {
+            return;
+        }
+
+        //renew the book and print message
+        renewBookByMember(member, copy);
     }
 
 
