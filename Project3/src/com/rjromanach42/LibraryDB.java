@@ -144,6 +144,23 @@ public class LibraryDB {
         System.out.println("Successfully renewed!");
     }
 
+    //This gets the amount of money owed by a specified member.
+    private ResultSet getMoneyOwedByMember(String card_no) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement(
+                "select card_no, first_name, middle_name, last_name, sum(\n" +
+                "   if(b.paid is null and datediff(if(b.date_returned is not null, b.date_returned, now()), b.date_borrowed) - (14 * (b.renewals_no + 1)) > 0,\n" +
+                "       if(b.date_returned is null,\n" +
+                "           datediff(now(), b.date_borrowed) - (14 * (b.renewals_no + 1)),\n" +
+                "           datediff(b.date_returned, b.date_borrowed) - (14 * (b.renewals_no + 1))) * 0.25,\n" +
+                "       0)) money_owed\n" +
+                "from member m natural join borrow b\n" +
+                "where card_no = ?\n" +
+                "group by m.card_no;");
+        stmt.setString(1, card_no);
+        return stmt.executeQuery();
+
+    }
+
 
     //----Public functions for printing or updating
 
@@ -407,6 +424,31 @@ public class LibraryDB {
 
         //renew the book and print message
         renewBookByMember(member, copy);
+    }
+
+    //This function asks a user to select a member and then prints out the amount of money that member owes to the library.
+    public void printMoneyOwedByMember() throws SQLException {
+        ResultSet targetMember;
+        List cardIDs;
+        String member;
+        System.out.println("Please select a member to get their balance owed");
+        cardIDs = printMembers(getAllMembersData());
+        if (cardIDs.size() <= 0)
+        {
+            System.out.println("No books are checked out!");
+            return;
+        }
+
+        //choose a member
+        member = chooseMember(cardIDs);
+
+        targetMember = getMoneyOwedByMember(member);
+        targetMember.next();
+        System.out.println(
+                targetMember.getString("first_name") + " " +
+                targetMember.getString("middle_name") + " " +
+                targetMember.getString("last_name") +
+                " owes the library $" + targetMember.getString("money_owed") + ".");
     }
 
 
