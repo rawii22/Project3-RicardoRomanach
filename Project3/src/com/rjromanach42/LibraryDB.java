@@ -203,10 +203,10 @@ public class LibraryDB {
             System.out.println("-----------------------------------------------------------------------------------");
             System.out.println("\tISBN:\t\t\t" + books.getString("ISBN"));
             System.out.println("\tGenre:\t\t\t" + (books.getString("name") == null ? "N/A" : books.getString("name")));
-            System.out.println("\tDate Published:\t" + books.getString("date_published"));
+            System.out.println("\tDate Published:\t\t" + books.getString("date_published"));
             System.out.println("\tPublisher:\t\t" + books.getString("publisher"));
             System.out.println("\tEdition:\t\t" + books.getString("edition") + " ");
-            System.out.println("\tDescription:\t" + (books.getString("description") == null ? "N/A" : books.getString("description")));
+            System.out.println("\tDescription:\t\t" + (books.getString("description") == null ? "N/A" : books.getString("description")));
             System.out.println();
         }
     }
@@ -339,8 +339,8 @@ public class LibraryDB {
             System.out.println("-----------------------------------------------------------------------------------");
             System.out.println("Title:\t" + copies.getString("title"));
             System.out.println("-----------------------------------------------------------------------------------");
-            System.out.println("\tISBN:\t\t\t\t\t" + copies.getString("ISBN"));
-            System.out.println("\tBarcode:\t\t\t\t" + copies.getString("barcode"));
+            System.out.println("\tISBN:\t\t\t\t" + copies.getString("ISBN"));
+            System.out.println("\tBarcode:\t\t\t" + copies.getString("barcode"));
             System.out.println("\tDate borrowed:\t\t\t" + copies.getString("date_borrowed"));
             System.out.println("\tNumber of renewals:\t\t" + copies.getString("renewals_no"));
             System.out.println();
@@ -377,8 +377,7 @@ public class LibraryDB {
         borrowedCopies = printCopies(getCopiesBorrowedByMember(member));
 
         //choose a book barcode from the list to return
-        System.out.println("\nPlease enter the Copy ID of the book you would like to return (or type \"exit\" to go back):");
-        copy = chooseCopy(borrowedCopies);
+        copy = chooseCopy(borrowedCopies, "\nPlease enter the Copy ID of the book you would like to return (or type \"exit\" to go back):\n\n");
         if (copy == null)
         {
             return;
@@ -413,8 +412,7 @@ public class LibraryDB {
         }
 
         //print list of all copies and ask user to choose copy ID
-        System.out.println("\nPlease enter the Copy ID of the book you would like to check out (or type \"exit\" to go back):");
-        copy = chooseCopy(printCopies(getAllBookCopies()));
+        copy = chooseCopy(printCopies(getAllBookCopies()), "\nPlease enter the Copy ID of the book you would like to check out (or type \"exit\" to go back):\n\n");
         if (copy == null)
         {
             return;
@@ -454,8 +452,7 @@ public class LibraryDB {
         borrowedCopies = printCopies(getCopiesBorrowedByMember(member));
 
         //choose a book barcode from the list to renew
-        System.out.println("\nPlease enter the Copy ID of the book you would like to renew (or type \"exit\" to go back):");
-        copy = chooseCopy(borrowedCopies);
+        copy = chooseCopy(borrowedCopies, "\nPlease enter the Copy ID of the book you would like to renew (or type \"exit\" to go back):\n\n");
         if (copy == null)
         {
             return;
@@ -495,9 +492,10 @@ public class LibraryDB {
         }
         System.out.println(
                 targetMember.getString("first_name") + " " +
-                (targetMember.getString("middle_name") == null ? "" : targetMember.getString("middle_name") + " ") +
-                targetMember.getString("last_name") +
-                " owes the library $" + targetMember.getString("money_owed") + ".");
+                        (targetMember.getString("middle_name") == null ? "" : targetMember.getString("middle_name") + " ") +
+                        targetMember.getString("last_name") +
+                        " owes the library $" + targetMember.getString("money_owed") + ".");
+        System.out.println("(Includes fees for late books not yet returned)");
     }
 
     //This function asks the user to select a member, and then it will print out a list of books that the selected
@@ -551,7 +549,8 @@ public class LibraryDB {
             }
         }
         if (!hasFees) {
-            System.out.println("This member has no fees!");
+            System.out.println("\nThis member has no fees!");
+            System.out.println("Note: Members must first return late books before being allowed to pay the late fee for that book.");
         }
         return hasFees ? lateBooks : null;
     }
@@ -617,18 +616,20 @@ public class LibraryDB {
     }
 
     /**
-     * This asks the user to enter a copy ID that is in the specified List. Once the user enters a valid copy ID,
-     * it will return that copy ID. If they choose to exit, it will return null.
+     * This asks the user to enter a copy ID that is in the specified List. It will print a promp to the user before
+     * printing "> ". Once the user enters a valid copy ID, it will return that copy ID.
+     * If they choose to exit, it will return null.
      * @param copies - List of copies for the user to select from
      * @return
      */
-    private String chooseCopy(List copies) {
+    private String chooseCopy(List copies, String prompt) {
         Scanner input = new Scanner(System.in);
         boolean validate = true;
         String copy = "";
 
         while(validate)
         {
+            System.out.print(prompt);
             System.out.print("> ");
             copy = input.nextLine();
             if(copy.toLowerCase(Locale.ROOT).equals("exit"))
@@ -644,6 +645,11 @@ public class LibraryDB {
         }
 
         return copy;
+    }
+
+    //Overload for chooseCopy that will not print a prompt before asking for a valid copy ID.
+    private String chooseCopy(List copies) {
+        return chooseCopy(copies, "");
     }
 
     //This function should be called whenever this class is done being used
