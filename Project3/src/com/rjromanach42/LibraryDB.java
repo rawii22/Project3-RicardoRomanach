@@ -75,22 +75,17 @@ public class LibraryDB {
         return stmt.executeQuery("select card_no, first_name, middle_name, last_name from member order by last_name");
     }
 
-    //This returns a list of every book that is currently borrowed.
-    private ResultSet getCopiesCurrentlyBorrowed() throws SQLException {
-        Statement stmt = conn.createStatement();
-        return stmt.executeQuery("select book.ISBN, book.title, copy.barcode, borrow.date_borrowed, borrow.renewals_no from borrow join copy join book on borrow.barcode = copy.barcode and copy.ISBN = book.ISBN where date_returned is null order by title");
-    }
-
     //This returns a list of users who currently have a book checked out.
     private ResultSet getMembersBorrowingBook() throws SQLException {
         Statement stmt = conn.createStatement();
         return stmt.executeQuery("select member.card_no, first_name, middle_name, last_name from member join borrow on member.card_no = borrow.card_no where date_returned is null group by card_no order by last_name");
     }
 
-    //Similar to getCopiesCurrentlyBorrowed, except the member ID (card_no) can be specified.
+    //This returns a list of books borrowed by the specified member ID (card_no).
+    //You can use "" as a parameter for card_no to get ALL book currently borrowed.
     private ResultSet getCopiesBorrowedByMember(String card_no) throws SQLException {
-        PreparedStatement stmt = conn.prepareStatement("select book.ISBN, book.title, copy.barcode, borrow.date_borrowed, borrow.renewals_no from borrow join copy join book on borrow.barcode = copy.barcode and copy.ISBN = book.ISBN where date_returned is null and card_no = ? order by title");
-        stmt.setString(1, card_no);
+        PreparedStatement stmt = conn.prepareStatement("select book.ISBN, book.title, copy.barcode, borrow.date_borrowed, borrow.renewals_no, member.first_name, member.middle_name, member.last_name from borrow join copy join book join member on borrow.barcode = copy.barcode and copy.ISBN = book.ISBN and member.card_no = borrow.card_no where borrow.date_returned is null and borrow.card_no like ? order by title");
+        stmt.setString(1, "%" + card_no + "%");
         return stmt.executeQuery();
     }
 
@@ -332,16 +327,44 @@ public class LibraryDB {
 
     //This prints all book copies that are currently borrowed
     public void printCopiesCurrentlyBorrowed() throws SQLException {
-        ResultSet copies = getCopiesCurrentlyBorrowed();
+        ResultSet copies;
+        List cardIDs;
+        String member;
+
+        //print list of users currently borrowing books
+        System.out.println("Please select a member to view their checked out books:");
+        cardIDs = printMembers(getMembersBorrowingBook());
+        if (cardIDs.size() <= 0)
+        {
+            System.out.println("No books are checked out!");
+            return;
+        }
+
+        //choose a user
+        System.out.println((cardIDs.size()+1) + ". All members");
+        cardIDs.add(""); //if the user chooses "All members" the query will match all card_no's
+        member = chooseItemByNumber(cardIDs); //associate the user's choice with the corresponding member card_no
+        if (member == null)
+        {
+            return;
+        }
+
+        //print list of copies borrowed by chosen member (via card_no)
+        System.out.println("This member has borrowed these books:");
+        copies = getCopiesBorrowedByMember(member);
 
         while(copies.next())
         {
+            String first = copies.getString("first_name") != null ? copies.getString("first_name") : "";
+            String middle = copies.getString("middle_name") != null ? copies.getString("middle_name") : "";
+            String last = copies.getString("last_name") != null ? copies.getString("last_name") : "";
             System.out.println("-----------------------------------------------------------------------------------");
             System.out.println("Title:\t" + copies.getString("title"));
             System.out.println("-----------------------------------------------------------------------------------");
             System.out.println("\tISBN:\t\t\t\t" + copies.getString("ISBN"));
             System.out.println("\tBarcode:\t\t\t" + copies.getString("barcode"));
             System.out.println("\tDate borrowed:\t\t\t" + copies.getString("date_borrowed"));
+            System.out.println("\tBorrower:\t\t\t" + first + " " + middle + " " + last);
             System.out.println("\tNumber of renewals:\t\t" + copies.getString("renewals_no"));
             System.out.println();
         }
@@ -537,8 +560,8 @@ public class LibraryDB {
                 System.out.println("-----------------------------------------------------------------------------------");
                 System.out.println("\tISBN:\t\t\t" + targetMember.getString("ISBN"));
                 System.out.println("\tCopy ID:\t\t" + targetMember.getString("barcode"));
-                System.out.println("\tDate Borrowed:\t" + targetMember.getString("date_borrowed"));
-                System.out.println("\tDate Returned:\t" + (targetMember.getString("date_returned") == null ? "Not returned" : targetMember.getString("date_returned")));
+                System.out.println("\tDate Borrowed:\t\t" + targetMember.getString("date_borrowed"));
+                System.out.println("\tDate Returned:\t\t" + (targetMember.getString("date_returned") == null ? "Not returned" : targetMember.getString("date_returned")));
                 System.out.println("\tRenewals:\t\t" + targetMember.getString("renewals_no"));
                 System.out.println("\tFee:\t\t\t$" + fee);
                 //date_returned must be used here since copy ID is not specific enough. If copy is used and someone
@@ -566,7 +589,7 @@ public class LibraryDB {
         }
         String member = lateBooks.remove(0).toString();
 
-        System.out.println("\nPlease select record number to make a payment for (or type \"exit\" to go back) (You can only make payments for returned books.):");
+        System.out.println("\nPlease select record number to make a payment for (or type \"exit\" to go back) (You can only make payments for returned books):");
         targetBook = chooseItemByNumber(lateBooks);
         if(targetBook == null)
         {

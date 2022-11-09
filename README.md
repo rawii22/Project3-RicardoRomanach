@@ -64,3 +64,9 @@ The total amount of money owed to the library by a certain member includes books
 There are a few functions in this program that are **expecting the queried book data to be sorted by title.** So, if you add a new function that retrieves books, it would be a good idea to order the data by "title".
 
 Indentations look best when this program is run on Command Prompt. Spacing might look slightly off when run inside of IntelliJ.
+
+## Note to the grader
+
+The instructions say that "brown" should be a user who can access the database, however that is something that must be set up on the computer's local database instance. Even if we set up a user called "brown" on our databases, your test database will not have that user. Also, we cannot create a user called "brown" on any program user's database since that would first require the program to be logged in.
+
+The only solution to this problem was to just allow a mechanism through which the program user can sign into whichever database user they desired. So, make sure that you create a user called brown that you can sign into (with sufficient permissions if applicable)
