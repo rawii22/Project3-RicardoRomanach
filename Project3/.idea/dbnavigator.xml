@@ -48,6 +48,8 @@ select borrow.card_no, book.ISBN, book.title, copy.barcode, borrow.date_borrowed
 
 update library.borrow set date_returned = null where (date(date_returned) = current_date() and card_no = 333 and barcode = 1113);
 
+update library.borrow set paid = 1 where (card_no = 331 and date_returned = '2022-08-25 18:30:30')
+
 update library.borrow set date_returned = current_timestamp() where (date_returned is null and card_no = 333 and barcode = 1113);
 
 update library.borrow set renewals_no = renewals_no + 1 where (date_returned is null and card_no = 331 and barcode = 1105);

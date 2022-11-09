@@ -15,7 +15,7 @@ public class Main {
         LibraryDB library = new LibraryDB();
         Scanner input = new Scanner(System.in);
         int menuChoice = 0;
-        final int quit = 11;
+        final int quit = 12;
 
         while(menuChoice != quit)
         {
@@ -32,6 +32,7 @@ public class Main {
                 System.out.println("8.  Renew a book");
                 System.out.println("9.  Get money owed by member");
                 System.out.println("10. Get money owed by member per book");
+                System.out.println("11. Make payment on late fee");
                 System.out.println(quit + ". Quit\n");
                 System.out.print("> ");
 
@@ -81,7 +82,10 @@ public class Main {
                         library.printMoneyOwedByMember();
                         break;
                     case 10:
-                        library.printFeePerBookByMember();
+                        library.printFeePerBookByMember(true); // true here to include books that the member has not returned
+                        break;
+                    case 11:
+                        library.makePaymentOnLateFee();
                         break;
                     case quit:
                         System.out.println("\nThank you for using the library database system. Goodbye!");
@@ -101,6 +105,8 @@ public class Main {
                 System.out.println("Exception");
                 System.out.println(e);
             }
+
+            //TODO: Ask for user to press any key to continue.
         }
 
         try

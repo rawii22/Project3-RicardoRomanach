@@ -44,4 +44,6 @@ I want to make sure that this repository comes with everything it needs. I want 
 
 Unfortunately, since this program had to be graded on a separate machine, and therefore a separate database instance, **we were not able to use sql functions or stored procedures since the grader would have been missing those functions and procedures in their database if they tried to run the program.**
 
-Also, with this program a user is not allowed to renew a book more than twice.
+With this program a user is not allowed to renew a book more than twice.
+
+The total amount of money owed to the library by a certain member includes books not yet returned. However, a late fee payment cannot be made on a book that has not been returned. A member can only register a payment on a book that has been returned. The menu will limit your options accordingly.

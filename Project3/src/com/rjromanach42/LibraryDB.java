@@ -28,18 +28,16 @@ public class LibraryDB {
     //This method prompts the user for login info and return a connection if successful. Otherwise, it will return null.
     private Connection login() {
         Connection test;
-        //TODO: Uncomment this for release version
-        /*Scanner input = new Scanner(System.in);
+        Scanner input = new Scanner(System.in);
         System.out.print("Username: ");
         String username = input.nextLine();
         System.out.print("Password: ");
-        String password = input.nextLine();*/
+        String password = input.nextLine();
 
         //try-catch here to control what it returns
         try {
-            //test = DriverManager.getConnection("jdbc:mysql://localhost:3306/library",username,password);
-            //TODO: Use the line on top instead for release version
-            test = DriverManager.getConnection("jdbc:mysql://localhost:3306/library","root","db123");
+            test = DriverManager.getConnection("jdbc:mysql://localhost:3306/library",username,password);
+            //test = DriverManager.getConnection("jdbc:mysql://localhost:3306/library","root","db123");
             System.out.println("\nSuccess!");
             return test;
         } catch (SQLException e) {
@@ -152,7 +150,7 @@ public class LibraryDB {
                 "       if(b.date_returned is null,\n" +
                 "           datediff(now(), b.date_borrowed) - (14 * (b.renewals_no + 1)),\n" +
                 "           datediff(b.date_returned, b.date_borrowed) - (14 * (b.renewals_no + 1))) * 0.25,\n" +
-                "       0)) money_owed\n" +
+                "       0.00)) money_owed\n" +
                 "from member m natural join borrow b\n" +
                 "where card_no = ?\n" +
                 "group by m.card_no;");
@@ -163,19 +161,32 @@ public class LibraryDB {
 
     //This gets a list of each book for whom a specified member owes money, including the fee for each book. It also
     //returns a variety of other columns.
-    private ResultSet getFeePerBookByMember(String card_no) throws SQLException {
+    private ResultSet getFeePerBookByMember(String card_no, boolean includeBooksNotReturned) throws SQLException {
         PreparedStatement stmt = conn.prepareStatement(
             "select first_name, middle_name, last_name, bk.ISBN, bk.title, c.barcode, date_borrowed, date_returned, renewals_no, (\n" +
                 "   if(b.paid is null and datediff(if(b.date_returned is not null, b.date_returned, now()), b.date_borrowed) - (14 * (b.renewals_no + 1)) > 0,\n" +
                     "   if(b.date_returned is null,\n" +
-                    "       datediff(now(), b.date_borrowed) - (14 * (b.renewals_no + 1)),\n" +
+                    (includeBooksNotReturned ? "       datediff(now(), b.date_borrowed) - (14 * (b.renewals_no + 1)),\n" : "0,\n") +
                     "       datediff(b.date_returned, b.date_borrowed) - (14 * (b.renewals_no + 1))) * 0.25,\n" +
-                    "   0)) as money_owed, paid\n" +
+                    "   0.00)) as money_owed, paid\n" +
                 "from member m join borrow b join book bk join copy c\n" +
                 "on m.card_no = b.card_no and b.barcode = c.barcode and bk.ISBN = c.ISBN\n" +
                 "where m.card_no = ?");
         stmt.setString(1, card_no);
         return stmt.executeQuery();
+    }
+
+    //This function updates the 'paid' column of a borrow record to be 1 given a member's card_no and a return date.
+    //The return date is needed since the copy ID (barcode) is not unique enough to identify a record.
+    //If one member borrows the same copy more than once and returns them late every time, the card_no and barcode
+    //are not enough to distinguish each of those entries individually.
+    private void makePaymentByMember(String card_no, String date_returned) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("update library.borrow set paid = 1 where (card_no = ? and date_returned = ?)");
+        stmt.setString(1, card_no);
+        stmt.setString(2, date_returned);
+        stmt.executeUpdate();
+
+        System.out.println("Fee successfully paid!");
     }
 
 
@@ -355,7 +366,11 @@ public class LibraryDB {
         }
 
         //choose a user
-        member = chooseMember(cardIDs); //associate the user's choice with the corresponding member card_no
+        member = chooseItemByNumber(cardIDs); //associate the user's choice with the corresponding member card_no
+        if (member == null)
+        {
+            return;
+        }
 
         //print list of copies borrowed by chosen member (via card_no)
         System.out.println("This member has borrowed these books:");
@@ -391,7 +406,11 @@ public class LibraryDB {
         }
 
         //choose a user
-        member = chooseMember(cardIDs);
+        member = chooseItemByNumber(cardIDs);
+        if (member == null)
+        {
+            return;
+        }
 
         //print list of all copies and ask user to choose copy ID
         System.out.println("\nPlease enter the Copy ID of the book you would like to check out (or type \"exit\" to go back):");
@@ -424,7 +443,11 @@ public class LibraryDB {
         }
 
         //choose a user
-        member = chooseMember(cardIDs);
+        member = chooseItemByNumber(cardIDs);
+        if (member == null)
+        {
+            return;
+        }
 
         //print list of copies borrowed by chosen member (via card_no)
         System.out.println("This member has borrowed these books:");
@@ -457,44 +480,61 @@ public class LibraryDB {
         }
 
         //choose a member
-        member = chooseMember(cardIDs);
+        member = chooseItemByNumber(cardIDs);
+        if (member == null)
+        {
+            return;
+        }
 
         //print money owed by that member
         targetMember = getMoneyOwedByMember(member);
-        targetMember.next();
+        if (!targetMember.next())
+        {
+            System.out.println("This member has no fees!");
+            return;
+        }
         System.out.println(
                 targetMember.getString("first_name") + " " +
-                targetMember.getString("middle_name") + " " +
+                (targetMember.getString("middle_name") == null ? "" : targetMember.getString("middle_name") + " ") +
                 targetMember.getString("last_name") +
                 " owes the library $" + targetMember.getString("money_owed") + ".");
     }
 
     //This function asks the user to select a member, and then it will print out a list of books that the selected
-    //member owes money for and the fee for each one.
-    public void printFeePerBookByMember() throws SQLException {
+    //member owes money for and the fee for each one. It allows you to choose whether to include non returned books.
+    public List printFeePerBookByMember(boolean includeBooksNotReturned) throws SQLException {
         ResultSet targetMember;
         List cardIDs;
+        List lateBooks = new ArrayList();
         String member;
+        Integer count = 1;
+        boolean hasFees = false;
 
         //print list of users
-        System.out.println("Please select a member to get their balance owed");
+        System.out.println("Please select a member to get their fee information:");
         cardIDs = printMembers(getAllMembersData());
         if (cardIDs.size() <= 0)
         {
-            return;
+            return null;
         }
 
         //choose a member
-        member = chooseMember(cardIDs);
+        member = chooseItemByNumber(cardIDs);
+        if (member == null)
+        {
+            return null;
+        }
+        lateBooks.add(member); //THIS IS BAD, this is my temporary solution for returning two values.
 
-        //print list of books and their respective fees
-        targetMember = getFeePerBookByMember(member);
+        //print list of books and their respective fees INCLUDING books not yet returned
+        targetMember = getFeePerBookByMember(member, includeBooksNotReturned);
         System.out.println("The selected member owes the library for the following books:");
         while(targetMember.next())
         {
             String fee = targetMember.getString("money_owed");
-            if(!fee.equals("0")) {
-                System.out.println("\n\n-----------------------------------------------------------------------------------");
+            if(!fee.equals("0.00") && !fee.equals("0")) {
+                System.out.println("\n\nRecord number: " + count);
+                System.out.println("-----------------------------------------------------------------------------------");
                 System.out.println("Title:\t" + targetMember.getString("title"));
                 System.out.println("-----------------------------------------------------------------------------------");
                 System.out.println("\tISBN:\t\t\t" + targetMember.getString("ISBN"));
@@ -503,8 +543,39 @@ public class LibraryDB {
                 System.out.println("\tDate Returned:\t" + (targetMember.getString("date_returned") == null ? "Not returned" : targetMember.getString("date_returned")));
                 System.out.println("\tRenewals:\t\t" + targetMember.getString("renewals_no"));
                 System.out.println("\tFee:\t\t\t$" + fee);
+                //date_returned must be used here since copy ID is not specific enough. If copy is used and someone
+                //tries to make a payment, the database might make payments for more late books than intended.
+                lateBooks.add(targetMember.getString("date_returned"));
+                hasFees = true;
+                count++;
             }
         }
+        if (!hasFees) {
+            System.out.println("This member has no fees!");
+        }
+        return hasFees ? lateBooks : null;
+    }
+
+    //This function allows the user to select a member, then it will print out a list of copies that the member
+    //has RETURNED yet and register a payment for a late fee.
+    public void makePaymentOnLateFee() throws SQLException {
+        List lateBooks;
+        String targetBook;
+        if((lateBooks = printFeePerBookByMember(false)) == null)
+        {
+            return;
+        }
+        String member = lateBooks.remove(0).toString();
+
+        System.out.println("\nPlease select record number to make a payment for (or type \"exit\" to go back) (You can only make payments for returned books.):");
+        targetBook = chooseItemByNumber(lateBooks);
+        if(targetBook == null)
+        {
+            return;
+        }
+
+        //make the payment
+        makePaymentByMember(member, targetBook);
     }
 
 
@@ -512,22 +583,27 @@ public class LibraryDB {
 
     /**
      * This asks the user to enter a number that is within the size of the specified List. Once the user enters a
-     * valid number, it will return the corresponding member card_no.
-     * @param cardIDs - A list of card_no's for the user to select from
+     * valid number, it will return the corresponding element in the specified list.
+     * @param items - A list of items for the user to select from
      * @return
      */
-    private String chooseMember(List cardIDs) {
+    private String chooseItemByNumber(List items) {
         Scanner input = new Scanner(System.in);
         Integer choice = -1;
+        String answerString;
         boolean validate = true;
 
         System.out.println("\nPlease enter a number:");
         while(validate) {
             try {
                 System.out.print("> ");
-                //TODO: create case here in case user wants to exit. store input as string first, check if "exit" and return, otherwise try to parse it
-                choice = Integer.parseInt(input.nextLine());
-                if (choice < 1 || choice > cardIDs.size()) {
+                answerString = input.nextLine();
+                if (answerString.toLowerCase(Locale.ROOT).equals("exit"))
+                {
+                    return null;
+                }
+                choice = Integer.parseInt(answerString);
+                if (choice < 1 || choice > items.size()) {
                     System.out.println("Please enter a number from the options listed above.");
                     continue;
                 }
@@ -537,7 +613,7 @@ public class LibraryDB {
             }
         }
 
-        return cardIDs.get(choice-1).toString();
+        return items.get(choice-1).toString();
     }
 
     /**
