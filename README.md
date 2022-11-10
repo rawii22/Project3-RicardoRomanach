@@ -26,8 +26,10 @@ I want to make sure that this repository comes with everything it needs. I want 
 1. **3300-F2022-project3-readme.pdf** - Instructions for this project.
 2. **GuideForConnectingMySQLDatabaseToIntelliJ(Update-V2).pdf** - This is a guide that I personally wrote. It was intended to help my class set up a MySQL connection in IntelliJ and show them how to start talking to the database in Java. (I did this since I REALLY did not want to use Eclipse.) This file also includes a link to install IntelliJ and to the MySQL connector jar file web page.
 3. **mysql-connector-java-8.0.30.jar** - This allows Java to communicate with the MySQL database. This is also included so other users don't have to install the library manually.
-4. **library_schema_MySQL.sql** - Provided by Professor. This file establishes the table structure of the "library" database.
-5. **libraryInsertFile_MySQL.sql** - Provided by Professor. This file adds some testing data into the "library" database.
+4. **library_schema_MySQL.sql*** - Provided by Professor. This file establishes the table structure of the "library" database.
+5. **libraryInsertFile_MySQL.sql*** - Provided by Professor. This file adds some testing data into the "library" database.
+
+> **\*** Make sure to run these two scripts (in this order) on your database before running the program, otherwise the program will not find your library schema.
 
 ## Compiling and Running
 

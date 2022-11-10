@@ -15,7 +15,7 @@ public class Main {
         LibraryDB library = new LibraryDB();
         Scanner input = new Scanner(System.in);
         int menuChoice = 0;
-        final int quit = 12;
+        final int quit = 13;
 
         while(menuChoice != quit)
         {
@@ -33,6 +33,7 @@ public class Main {
                 System.out.println("9.  Get money owed by member");
                 System.out.println("10. Get money owed by member per book");
                 System.out.println("11. Make payment on late fee");
+                System.out.println("12. Logout");
                 System.out.println(quit + ". Quit\n");
                 System.out.print("> ");
 
@@ -87,6 +88,19 @@ public class Main {
                     case 11:
                         library.makePaymentOnLateFee();
                         break;
+                    case 12:
+                        try
+                        {
+                            library.closeConnection();
+                            System.out.println("Logged out successfully!\n");
+                            library = new LibraryDB();
+                        }
+                        catch (SQLException e)
+                        {
+                            System.out.println("SQLException");
+                            System.out.println(e);
+                        }
+                        break;
                     case quit:
                         System.out.println("\nThank you for using the library database system. Goodbye!");
                         break;
@@ -112,6 +126,7 @@ public class Main {
         try
         {
             library.closeConnection();
+            System.out.println("Logged out successfully!\n");
         }
         catch (SQLException e)
         {
