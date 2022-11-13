@@ -3,6 +3,8 @@ This program uses Java to interact with a MySQL database. This is for CSC-3300 F
 
 GitHub: https://github.com/rawii22/Project3-RicardoRomanach
 
+Video Guide: https://drive.google.com/file/d/17zSjDSs4u6UR4uq3SP_6CfUXg_nz9f1q/view?usp=sharing
+
 Author: Ricardo Romanach
 
 ## Introduction
@@ -12,7 +14,7 @@ This program is our third major project for CSC-3300 at Tennessee Technological 
 ## Tools
 
 1. **IntelliJ IDEA** - For Java development and some database navigation
-2. **MySQL Server\*** - Server used for program to communicate with - try this: https://dev.mysql.com/downloads/mysql/
+2. **MySQL Server*** - Server used for program to communicate with - try this: https://dev.mysql.com/downloads/mysql/
 3. **MySQL Workbench** - For database navigation and testing SQL snippets
 4. **GitKraken** - For git repository management and visualization
 5. **Visual Studio Code** - For writing the README file and other basic tasks

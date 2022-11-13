@@ -1,4 +1,5 @@
-To build the program, either run the build.bat file OR execute the following commands in the src directory
+To build the program, make sure there is a "bin" folder in this directory (can be made with makeBinFolder.bat),
+and then either run the build.bat file OR execute the following commands in the src directory
 	javac -d bin com\rjromanach42\Main.java com\rjromanach42\LibraryDB.java
 	jar cvfm Project3.jar manifest.mf -C bin .
 
